@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+  <style>
+    html, body {
+  height: 100%;
+  margin: 0px 0px 0px 0px;
+  padding: 0px 0px 0px 0px;
+}
+
+#select_div {
+  border: 1px dashed #3366cc;
+  position: absolute;
+  z-index: 1000;
+}
+
+.exampleChart{
+  height: 100%;
+}
+
+.hidden {
+  display: none;
+  visibility: hidden;
+} 
+
+ /* .test{
+  height: 700px;
+  width: 100%;
+} */
+  </style>
+<head>
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+
+</head>
+<body>
+
+<div class="test"></div>
+  <div id="output"></div>
+  <div>
+      <div id="exampleChart"  style="width: 900px; height: 500px;"></div>
+  </div>
+  <script type="text/javascript">
+    google.charts.load('current', {'packages':['corechart']});
+    google.charts.setOnLoadCallback( initChart ); 
+      var myStackedChart;
+      var oldY = 0;
+      var selectedPoint = null;
+        // var arrData = [
+        //   ['Genre', 'Fantasy & Sci Fi', 'Romance', 'Mystery/Crime', 'General',
+        //    'Western', 'Literature', { role: 'annotation' } ],
+        //   ['2010', 10, 24, 20, 32, 18, 5, ''],
+        //   ['2020', 16, 22, 23, 30, 16, 9, ''],
+        //   ['2030', 28, 19, 29, 30, 12, 13, '']
+        // ];
+
+
+        var arrData = [
+        ['name', 'Transport', 'Energi', 'Affald', 'diesel'],
+          ['2020', 143.3, 136.34, 174.79, 88],
+          ['2022', 173.66, 173.66, 5.4, 3.2],
+          ['2023', 0.44, 33.66, 1.4, 2.5]
+        ];
+          var data;
+          
+        var options = {
+          title: 'Age vs. Weight comparison',
+          // width: 1000,
+          // height: 300,
+          legend: {position: 'top', maxLines: 3},
+          // bar: { groupWidth: '75%' },
+          isStacked: true,
+          series: {
+            0: {
+              color: 'yellow'
+              },
+            1: {
+              color: 'green'
+            },
+            2: {
+              color: 'blue',
+            
+            },
+            3: {
+              color: 'red',
+            }
+          }
+  
+        };
+
+          function initChart(){
+            data = google.visualization.arrayToDataTable( arrData );
+            
+            myStackedChart = new google.visualization.ChartWrapper({
+                chartType:   'ColumnChart',
+                containerId: 'exampleChart',
+                dataTable:   data,
+                options:     options
+            });
+            
+            document.getElementById("exampleChart").addEventListener( "mousemove", mouseMoveScript );
+            document.getElementById("exampleChart").addEventListener( "mousedown", mouseDownScript );
+            document.getElementById("exampleChart").addEventListener( "mouseup", mouseUpScript );
+            
+            drawChart();
+          }
+  
+          function drawChart() {
+            myStackedChart.draw();
+          }
+          
+          function selectPoints( mx, my ) {
+            var chartLayout    = myStackedChart.getChart().getChartLayoutInterface();
+            var chartContainer = document.getElementById( myStackedChart.getContainerId() );
+            var chartBounds    = chartContainer.getBoundingClientRect();
+
+            if ((chartBounds.top <= my ) && ( (chartBounds.top  + chartBounds.height) >= my ) ){
+              var selection = [];
+              var dataTable = myStackedChart.getDataTable();
+              for (var row = 0; row < dataTable.getNumberOfRows(); row++) {
+                  for (var col = 1; col < dataTable.getNumberOfColumns(); col++) {
+                      var point = chartLayout.getBoundingBox('bar#' + (col - 1) + '#' + row);
+                      if( point != null ){
+                          if ((((chartBounds.left + point.left) >= (mx - point.width)) &&
+                                ((chartBounds.left + point.left + point.width) <= (mx + point.width))) &&
+                              (((chartBounds.top + point.top) >= (my - point.height)) &&
+                                ((chartBounds.top + point.top + point.height) <= (my + point.height)))) {
+                            selection.push({row: row, column: col});
+                          }
+                      }
+                  }
+              }
+          
+              if( selection.length > 0 ){
+                var item = selection[0];
+                selectedPoint = selection[0];
+              } else {
+                selectedPoint = null;
+              }
+              
+              myStackedChart.getChart().setSelection( selection );
+            }
+          }
+          
+          function mouseMoveScript( e ){
+            var x = e.clientX;
+            var y = e.clientY;
+            var coor = "Coordinates: (" + x + "," + y + ")";
+            document.getElementById("output").innerHTML = coor;
+            if( selectedPoint != null ){
+              var chartContainer  = document.getElementById(myStackedChart.getContainerId());
+              var chartBounds    = chartContainer.getBoundingClientRect();
+              var chartLayout     = myStackedChart.getChart().getChartLayoutInterface()
+              var chartAreaBounds = chartLayout.getChartAreaBoundingBox();
+              var chartMinY       = chartLayout.getVAxisValue(chartAreaBounds.top + chartAreaBounds.height);
+              var chartMaxY       = chartLayout.getVAxisValue(chartAreaBounds.top);
+              var dataTable = myStackedChart.getDataTable();
+
+              // var currentValue = dataTable.getValue(selectedPoint.row, selectedPoint.column);
+              // console.log("currentValue: ",currentValue);
+
+              // var spY = 0;
+              
+              // var yDirection = "";
+              //   if (oldY > e.pageY) {
+              //     yDirection = "down";
+              //     spY = Math.round(currentValue + 1);
+              //   } else {
+              //     yDirection = "up";
+              //     spY = Math.round(currentValue - 1);
+              //   }
+              //   oldY = e.pageY;
+
+                console.log("test node ", Math.round(chartAreaBounds.height - chartMinY));
+                console.log("node value", chartAreaBounds.height);
+
+              var spY = Math.round(( chartAreaBounds.height - ( y - chartBounds.top  - chartAreaBounds.top ) ) / chartAreaBounds.height * ( chartMaxY - chartMinY ));
+              console.log("spY: ",spY);
+              dataTable.setValue( selectedPoint.row, selectedPoint.column, spY );
+              drawChart();
+            }
+          }
+          
+          function mouseDownScript( e ){
+            var mx = e.clientX;
+            var my = e.clientY;
+              // Get the target
+            const target = e.target;
+
+            // Get the bounding rectangle of target
+            const rect = target.getBoundingClientRect();
+
+            // Mouse position
+            const y = e.clientY - rect.top;
+
+            if( e.target && y < 10){
+                // targ = e.target;
+                document.getElementById('exampleChart').style.cursor = 'n-resize';
+                selectPoints( mx, my );
+            } else if (e.srcElement) {
+                targ = e.srcElement;
+            }
+
+          }
+          
+          function mouseUpScript( e ){
+            if( selectedPoint != null ){
+            document.getElementById('exampleChart').style.cursor = 'default';
+                selectedPoint = null;
+            }
+          }
+           
+    </script>
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+  <style>
+    html, body {
+  height: 100%;
+  margin: 0px 0px 0px 0px;
+  padding: 0px 0px 0px 0px;
+}
+
+#select_div {
+  border: 1px dashed #3366cc;
+  position: absolute;
+  z-index: 1000;
+}
+
+.exampleChart{
+  height: 100%;
+}
+
+.hidden {
+  display: none;
+  visibility: hidden;
+}
+  </style>
+<head>
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+  <script type="text/javascript">
+  google.charts.load('current', {'packages':['corechart']});
+  google.charts.setOnLoadCallback( initChart ); 
+    var myLineChart;
+    var selectedPoint = null;
+      var arrData = [
+          ['Age', 'Weight', 'Weight2'],
+          [ 3,      3.5,      null   ],
+          [ 4,      5,        null   ],
+          [ 4,      5.5,      null   ],
+          [ 6.5,    7,        null   ],
+          [ 8,      12,       null   ],
+          [ 11,     14,       null   ],
+          [ 1,      null,      3.551 ],
+          [ 2,      null,     12.753 ],
+          [ 3,      null,      5.058 ],
+          [ 4,      null,      6.620 ],
+          [ 5,      null,     12.371 ],
+          [ 6,      null,      1.342 ],
+          [ 7,      null,      5.202 ],
+          [ 8,      null,      7.008 ]
+      ];
+        
+        var data;
+        
+        var options = {
+          title: 'Age vs. Weight comparison',
+          hAxis: {title: 'Age', minValue: 0, maxValue: 15},
+          vAxis: {title: 'Weight', minValue: 0, maxValue: 15},
+          legend: 'none'
+        };
+        
+        function initChart(){
+            data = google.visualization.arrayToDataTable( arrData );
+            
+            myLineChart = new google.visualization.ChartWrapper({
+                chartType:   'LineChart',
+                containerId: 'exampleChart',
+                dataTable:   data,
+                options:     options
+            });
+            
+            document.getElementById("exampleChart").addEventListener( "mousemove", mouseMoveScript );
+            document.getElementById("exampleChart").addEventListener( "mousedown", mouseDownScript );
+            document.getElementById("exampleChart").addEventListener( "mouseup", mouseUpScript );
+            
+            drawChart();
+        }
+
+        function drawChart() {
+            myLineChart.draw();
+        }
+        
+        function selectPoints( mx, my ) {
+            var chartLayout    = myLineChart.getChart().getChartLayoutInterface();
+            var chartContainer = document.getElementById( myLineChart.getContainerId() );
+            var chartBounds    = chartContainer.getBoundingClientRect();
+            if ( ( ( (chartBounds.left + window.pageXOffset) <= mx ) && ( (chartBounds.left + chartBounds.width  + window.pageXOffset) >= mx ) ) &&
+                 ( ( (chartBounds.top  + window.pageYOffset) <= my ) && ( (chartBounds.top  + chartBounds.height + window.pageYOffset) >= my ) ) ){
+                var selection = [];
+                var dataTable = myLineChart.getDataTable();
+                for (var row = 0; row < dataTable.getNumberOfRows(); row++) {
+                    for (var col = 1; col < dataTable.getNumberOfColumns(); col++) {
+                        var point = chartLayout.getBoundingBox('point#' + (col - 1) + '#' + row);
+                        if( point != null ){
+                            if ((((chartBounds.left + point.left) >= (mx - point.width)) &&
+                                 ((chartBounds.left + point.left + point.width) <= (mx + point.width))) &&
+                                (((chartBounds.top + point.top) >= (my - point.height)) &&
+                                 ((chartBounds.top + point.top + point.height) <= (my + point.height)))) {
+                              selection.push({row: row, column: col});
+                            }
+                        }
+                    }
+                }
+            
+                if( selection.length > 0 ){
+                    var item = selection[0];
+                    selectedPoint = selection[0];
+                } else {
+                    selectedPoint = null;
+                }
+                
+                myLineChart.getChart().setSelection( selection );
+            }
+        }
+        
+        function mouseMoveScript( e ){
+            var x = e.clientX;
+            var y = e.clientY;
+            var coor = "Coordinates: (" + x + "," + y + ")";
+            document.getElementById("output").innerHTML = coor;
+            if( selectedPoint != null ){
+                var chartContainer  = document.getElementById( myLineChart.getContainerId() );
+                var chartBounds    = chartContainer.getBoundingClientRect();
+                var chartLayout     = myLineChart.getChart().getChartLayoutInterface()
+                var chartAreaBounds = chartLayout.getChartAreaBoundingBox();
+                var chartMinX       = chartLayout.getHAxisValue( chartAreaBounds.left );
+                var chartMaxX       = chartLayout.getHAxisValue( chartAreaBounds.left + chartAreaBounds.width );
+                var chartMinY       = chartLayout.getVAxisValue( chartAreaBounds.top + chartAreaBounds.height );
+                var chartMaxY       = chartLayout.getVAxisValue( chartAreaBounds.top );
+                
+                var dataTable = myLineChart.getDataTable();
+                var spX = ( x - chartBounds.left - chartAreaBounds.left ) / chartAreaBounds.width  * ( chartMaxX - chartMinX );
+                var spY = ( chartAreaBounds.height - ( y - chartBounds.top  - chartAreaBounds.top ) ) / chartAreaBounds.height * ( chartMaxY - chartMinY );
+                dataTable.setValue( selectedPoint.row, 0, spX );
+                dataTable.setValue( selectedPoint.row, selectedPoint.column, spY );
+                drawChart();
+            }
+        }
+        
+        function mouseDownScript( e ){
+            var mx = e.clientX;
+            var my = e.clientY;
+            
+            if( e.target ){
+                targ = e.target;
+                selectPoints( mx, my );
+            } else if (e.srcElement) {
+                targ = e.srcElement;
+            }
+            var tname;
+            tname = targ.tagName;
+        }
+        
+        function mouseUpScript( e ){
+            if( selectedPoint != null ){
+                selectedPoint = null;
+            }
+        }
+         
+  </script>
+</head>
+<body>
+  <div id="output"></div>
+  <div>
+      <div id="exampleChart"  style="width: 900px; height: 500px;"></div>
+  </div>
+</body>
+</html>
